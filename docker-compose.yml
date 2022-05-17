@@ -1,0 +1,46 @@
+version: '3.5'
+
+services:
+  node_1_postgres:
+    container_name: node_1_postgres
+    image: postgres
+    environment:
+      POSTGRES_USER: node1
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: postgres
+      PGDATA: /data/postgres
+    volumes:
+      - postgres1:/data/postgres
+    ports:
+      - "5431:5432"
+    restart: unless-stopped
+  node_2_postgres:
+    container_name: node_2_postgres
+    image: postgres
+    environment:
+      POSTGRES_USER: node2
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: postgres
+      PGDATA: /data/postgres
+    volumes:
+      - postgres2:/data/postgres
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+  node_3_postgres:
+    container_name: node_3_postgres
+    image: postgres
+    environment:
+      POSTGRES_USER: node3
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: postgres
+      PGDATA: /data/postgres
+    volumes:
+      - postgres3:/data/postgres
+    ports:
+      - "5433:5432"
+    restart: unless-stopped
+volumes:
+  postgres1:
+  postgres2:
+  postgres3:
