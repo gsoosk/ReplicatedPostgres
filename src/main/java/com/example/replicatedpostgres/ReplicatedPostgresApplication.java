@@ -1,5 +1,7 @@
 package com.example.replicatedpostgres;
 
+import com.example.replicatedpostgres.leader.LeaderApplication;
+import com.example.replicatedpostgres.replication.ReplicationApplication;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,6 +9,8 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.core.env.Environment;
+
+import static com.example.replicatedpostgres.shared.common.Configuration.REPLICATION_PORTS;
 
 @SpringBootApplication
 public class ReplicatedPostgresApplication implements CommandLineRunner {
@@ -23,6 +27,10 @@ public class ReplicatedPostgresApplication implements CommandLineRunner {
 
     @Autowired
     private Environment environment;
+    @Autowired
+    private LeaderApplication leaderApplication;
+    @Autowired
+    private ReplicationApplication replicationApplication;
 
 
     @Override
@@ -36,16 +44,16 @@ public class ReplicatedPostgresApplication implements CommandLineRunner {
         LOG.info("Active profile is {}", this.environment.getActiveProfiles()[0]);
         String activeProfile = this.environment.getActiveProfiles()[0];
         if (activeProfile.equals("leader")) {
-            // TODO: run leader
+            leaderApplication.run();
         }
         else if (activeProfile.equals("node1")) {
-            // TODO: run node1
+            replicationApplication.run(REPLICATION_PORTS.get(0));
         }
         else if (activeProfile.equals("node2")) {
-            // TODO: run node2
+            replicationApplication.run(REPLICATION_PORTS.get(1));
         }
         else if (activeProfile.equals("node3")) {
-            // TODO: run node3
+            replicationApplication.run(REPLICATION_PORTS.get(2));
         }
 
     }
