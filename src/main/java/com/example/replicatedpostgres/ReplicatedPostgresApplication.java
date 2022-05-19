@@ -43,17 +43,11 @@ public class ReplicatedPostgresApplication implements CommandLineRunner {
 
         LOG.info("Active profile is {}", this.environment.getActiveProfiles()[0]);
         String activeProfile = this.environment.getActiveProfiles()[0];
-        if (activeProfile.equals("leader")) {
-            leaderApplication.run();
-        }
-        else if (activeProfile.equals("node1")) {
-            replicationApplication.run(REPLICATION_PORTS.get(0));
-        }
-        else if (activeProfile.equals("node2")) {
-            replicationApplication.run(REPLICATION_PORTS.get(1));
-        }
-        else if (activeProfile.equals("node3")) {
-            replicationApplication.run(REPLICATION_PORTS.get(2));
+        switch (activeProfile) {
+            case "leader" -> leaderApplication.run();
+            case "node1" -> replicationApplication.run(REPLICATION_PORTS.get(0));
+            case "node2" -> replicationApplication.run(REPLICATION_PORTS.get(1));
+            case "node3" -> replicationApplication.run(REPLICATION_PORTS.get(2));
         }
 
     }
