@@ -47,7 +47,6 @@ public class ReplicatedPostgresApplication implements CommandLineRunner {
             case "leader" -> leaderApplication.run();
             case "node1" -> replicationApplication.run(REPLICATION_PORTS.get(0));
             case "node2" -> replicationApplication.run(REPLICATION_PORTS.get(1));
-            case "node3" -> replicationApplication.run(REPLICATION_PORTS.get(2));
         }
 
     }

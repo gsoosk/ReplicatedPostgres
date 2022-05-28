@@ -40,21 +40,7 @@ services:
     ports:
       - "5432:5432"
     restart: unless-stopped
-  node_3_postgres:
-    container_name: node_3_postgres
-    image: postgres
-    environment:
-      POSTGRES_USER: node3
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: postgres
-      PGDATA: /data/postgres
-    volumes:
-      - postgres3:/data/postgres
-    ports:
-      - "5433:5432"
-    restart: unless-stopped
 volumes:
   postgres0:
   postgres1:
   postgres2:
-  postgres3:
