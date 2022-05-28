@@ -7,6 +7,9 @@ running postgres nodes:
 docker-compose up -d
 ```
 
+Even if you stop services, databases will be saved into a volume. In case you wanted to remove them 
+run `docker volume prune` after stopping services.
+
 ### Step 2:
 building code:
 ```shell
