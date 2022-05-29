@@ -33,10 +33,10 @@ public class OptimisticValidation {
         current.RecordSet(readSet, writeSet, timeStamp.getAndAdd(1));
 
         for (TransactionRecord record : validated.values()) {
-            if (record.writeTime != -1 && current.startTime > record.writeTime) {
+            if (current.startTime > record.writeTime) {
                 // This record is fully executed, no need to validate
                 continue;
-            } else if (record.writeTime != -1 && current.validationTime > record.writeTime) {
+            } else if (current.validationTime > record.writeTime) {
                 // This record finished write before validation
                 // Only check read set
                 if (hasConflict(current.readSet, record.writeSet)) {

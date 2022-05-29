@@ -14,7 +14,7 @@ public class TransactionRecord {
     public TransactionRecord(int id, long time) {
         this.trxId = id;
         startTime = time;
-        writeTime = -1;
+        writeTime = Long.MAX_VALUE;
     }
 
     public void RecordSet(List<String> readSet, List<String> writeSet, long time) {
