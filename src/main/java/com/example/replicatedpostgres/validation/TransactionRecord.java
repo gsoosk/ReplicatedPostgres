@@ -7,14 +7,16 @@ public class TransactionRecord {
     public long startTime;
     public long validationTime;
     public long writeTime;
+    public boolean isReadonly;
 
     public List<String> readSet;
     public List<String> writeSet;
 
-    public TransactionRecord(int id, long time) {
+    public TransactionRecord(int id, long time, boolean isReadonly) {
         this.trxId = id;
         startTime = time;
         writeTime = Long.MAX_VALUE;
+        this.isReadonly = isReadonly;
     }
 
     public void RecordSet(List<String> readSet, List<String> writeSet, long time) {

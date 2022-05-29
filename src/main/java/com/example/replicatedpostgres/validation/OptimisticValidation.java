@@ -17,7 +17,12 @@ public class OptimisticValidation {
     }
 
     public void AddTrasaction(int id) {
-        TransactionRecord record = new TransactionRecord(id, timeStamp.getAndAdd(1));
+        TransactionRecord record = new TransactionRecord(id, timeStamp.getAndAdd(1), false);
+        onGoing.put(id, record);
+    }
+
+    public void AddTrasactionReadOnly(int id) {
+        TransactionRecord record = new TransactionRecord(id, timeStamp.getAndAdd(1), true);
         onGoing.put(id, record);
     }
 
@@ -30,6 +35,11 @@ public class OptimisticValidation {
         // Get current record object
         TransactionRecord current = onGoing.get(id);
         onGoing.remove(id);
+
+        if (current.isReadonly) {
+            return true;
+        }
+
         current.RecordSet(readSet, writeSet, timeStamp.getAndAdd(1));
 
         for (TransactionRecord record : validated.values()) {
@@ -60,7 +70,7 @@ public class OptimisticValidation {
 
     public void CompleteWrite(int id) {
         if (!validated.containsKey(id)) {
-            System.out.println("[Error]: In CompleteWrite, " + id + " is not in validated set");
+            return;
         }
 
         validated.get(id).CompleteWrite(timeStamp.getAndAdd(1));
