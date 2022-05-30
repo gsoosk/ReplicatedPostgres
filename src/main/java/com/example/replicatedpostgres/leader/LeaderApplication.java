@@ -33,7 +33,7 @@ public class LeaderApplication {
     }
 
     private void dispatchCommandToReplications(String command) {
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 2; i++) {
             Sender sender = new Sender();
             sender.startConnection("127.0.0.1", REPLICATION_PORTS.get(i));
             String response = sender.sendAndReceiveResponse(command);

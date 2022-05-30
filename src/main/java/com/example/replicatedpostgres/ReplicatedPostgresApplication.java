@@ -1,5 +1,6 @@
 package com.example.replicatedpostgres;
 
+import com.example.replicatedpostgres.client.ClientApplication;
 import com.example.replicatedpostgres.leader.LeaderApplication;
 import com.example.replicatedpostgres.replication.ReplicationApplication;
 import org.slf4j.Logger;
@@ -31,6 +32,8 @@ public class ReplicatedPostgresApplication implements CommandLineRunner {
     private LeaderApplication leaderApplication;
     @Autowired
     private ReplicationApplication replicationApplication;
+    @Autowired
+    private ClientApplication clientApplication;
 
 
     @Override
@@ -47,6 +50,7 @@ public class ReplicatedPostgresApplication implements CommandLineRunner {
             case "leader" -> leaderApplication.run();
             case "node1" -> replicationApplication.run(REPLICATION_PORTS.get(0));
             case "node2" -> replicationApplication.run(REPLICATION_PORTS.get(1));
+            case "client" -> clientApplication.run();
         }
 
     }
