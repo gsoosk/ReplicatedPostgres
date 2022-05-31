@@ -25,6 +25,8 @@ public class ClientApplication {
     private String writeKey = "";
     private String writeValue = "";
 
+    private Integer leaderPort = Configuration.LEADER_PORT;
+
     public void run() {
         log.info("Running client application");
         log.info("write 'quit' if you want to exit" );
@@ -35,42 +37,55 @@ public class ClientApplication {
                 return;
 
             if (state.equals(States.INIT)) {
-                state = States.GET_TX_INPUT;
                 log.info("sending message:({}) to leader", commandMessage);
-                Sender sender = new Sender();
-                sender.startConnection("127.0.0.1", Configuration.LEADER_PORT);
-                String response = sender.sendAndReceiveResponse(commandMessage);
+                String response = sendToLeader(commandMessage);
                 log.info("init response: {}", response);
+
+                state = States.GET_TX_INPUT;
             }
             else if (state.equals(States.WRITE)) {
-                // next state
-                state = States.GET_TX_INPUT;
                 writeSet.put(writeKey, writeValue);
                 log.info("buffered {}", commandMessage);
+
+                state = States.GET_TX_INPUT;
             }
             else if (state.equals(States.READ)) {
-                // next state
-                state = States.GET_TX_INPUT;
                 if (writeSet.containsKey(readKey))
-                    log.info("{}:{}", readKey, writeSet.get(readKey));
+                    log.info("{}={}", readKey, writeSet.get(readKey));
                 else {
                     log.info("sending message:({}) to leader", commandMessage);
-                    Sender sender = new Sender();
-                    sender.startConnection("127.0.0.1", Configuration.LEADER_PORT);
-                    String response = sender.sendAndReceiveResponse(commandMessage);
-                    log.info("{}:{}", readKey, response);
+                    String response = sendToLeader(commandMessage);
+                    log.info("{}={}", readKey, response);
                 }
+
+                state = States.GET_TX_INPUT;
             } else if (state.equals(States.COMMIT)) {
-                // next state
-                state = States.IDLE;
                 String commitMessage = commandMessage + " : " + serializeWriteSet();
                 log.info("sending commit to leader: {}", commitMessage);
-                Sender sender = new Sender();
-                sender.startConnection("127.0.0.1", Configuration.LEADER_PORT);
-                String response = sender.sendAndReceiveResponse(commitMessage);
+                String response = sendToLeader(commitMessage);
                 log.info("transaction result: {}", response);
+
+                state = States.IDLE;
             }
         }
+    }
+
+    private String sendToLeader(String commandMessage) {
+        Sender sender = new Sender();
+        sender.startConnection("127.0.0.1", leaderPort);
+        String response = sender.sendAndReceiveResponse(commandMessage);
+        if (response == null) {
+            switchLeader();
+            sender.stopConnection();
+            sender.startConnection("127.0.0.1", leaderPort);
+            response = sender.sendAndReceiveResponse(commandMessage);
+        }
+        sender.stopConnection();
+        return response;
+    }
+
+    private void switchLeader() {
+        leaderPort = Configuration.SECONDARY_LEADER_PORT;
     }
 
     private String serializeWriteSet() {
