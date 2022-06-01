@@ -10,7 +10,9 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -21,6 +23,7 @@ public class ClientApplication {
     private enum States {IDLE, INIT, GET_TX_INPUT, WRITE, READ, COMMIT};
     private States state = States.IDLE;
     private Map<String, String> writeSet = new HashMap<>();
+    private Set<String> readSet = new HashSet<>();
     private String readKey = "";
     private String writeKey = "";
     private String writeValue = "";
@@ -58,9 +61,10 @@ public class ClientApplication {
                     log.info("{}={}", readKey, response);
                 }
 
+                readSet.add(readKey);
                 state = States.GET_TX_INPUT;
             } else if (state.equals(States.COMMIT)) {
-                String commitMessage = commandMessage + " : " + serializeWriteSet();
+                String commitMessage = commandMessage + " : " + serializeWriteSet() + "|" + serializeReadSet();
                 log.info("sending commit to leader: {}", commitMessage);
                 String response = sendToLeader(commitMessage);
                 log.info("transaction result: {}", response);
@@ -68,6 +72,18 @@ public class ClientApplication {
                 state = States.IDLE;
             }
         }
+    }
+
+    private String serializeReadSet() {
+        StringBuilder result = new StringBuilder();
+        result.append("(");
+        for (String key : readSet) {
+            if (!result.toString().equals("("))
+                result.append(",");
+            result.append(key);
+        }
+        result.append(")");
+        return result.toString();
     }
 
     private String sendToLeader(String commandMessage) {
