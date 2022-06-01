@@ -16,6 +16,7 @@ public class TransactionRecord {
         this.trxId = id;
         startTime = time;
         writeTime = Long.MAX_VALUE;
+        validationTime = Long.MAX_VALUE;
         this.isReadonly = isReadonly;
     }
 
@@ -27,5 +28,13 @@ public class TransactionRecord {
 
     public void CompleteWrite(long time) {
         this.writeTime = time;
+    }
+
+    @Override
+    public String toString() {
+        String x = "Trx id: " + this.trxId + ", start: " + startTime
+        + ", validate: " + validationTime  + ", writeTime" + writeTime;
+
+        return x;
     }
 }

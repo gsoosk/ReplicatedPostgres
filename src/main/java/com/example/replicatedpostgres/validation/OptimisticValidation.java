@@ -1,10 +1,13 @@
 package com.example.replicatedpostgres.validation;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
+@Slf4j
 public class OptimisticValidation {
     private AtomicLong timeStamp;
     private Map<Integer, TransactionRecord> validated;
@@ -28,7 +31,7 @@ public class OptimisticValidation {
 
     public synchronized boolean Validate(int id, List<String> readSet, List<String> writeSet) {
         if (! onGoing.containsKey(id)) {
-            System.out.println("[Error]: In Validate, " + id + " is not in ongoing set");
+            log.error("In Validate, " + id + " is not in ongoing set");
             return false;
         }
 
@@ -50,15 +53,18 @@ public class OptimisticValidation {
                 // This record finished write before validation
                 // Only check read set
                 if (hasConflict(current.readSet, record.writeSet)) {
+                    logConflict(current, record);
                     return false;
                 }
             } else {
                 // Check both read and write set
                 if (hasConflict(current.readSet, record.writeSet)) {
+                    logConflict(current, record);
                     return false;
                 }
 
                 if (hasConflict(current.writeSet, record.writeSet)) {
+                    logConflict(current, record);
                     return false;
                 }
             }
@@ -83,5 +89,15 @@ public class OptimisticValidation {
             }
         }
         return false;
+    }
+
+    private void logConflict(TransactionRecord a, TransactionRecord b){
+        log.info("There is conflict between T" + a.trxId + " and T" + b.trxId);
+        log.info(a.toString());
+        log.info("ReadSet: " + a.readSet);
+        log.info("WriteSet: " + a.writeSet);
+        log.info(b.toString());
+        log.info("ReadSet: " + b.readSet);
+        log.info("WriteSet: " + b.writeSet);
     }
 }
