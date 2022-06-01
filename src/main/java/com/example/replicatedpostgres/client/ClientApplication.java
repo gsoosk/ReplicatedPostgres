@@ -27,6 +27,7 @@ public class ClientApplication {
     private String readKey = "";
     private String writeKey = "";
     private String writeValue = "";
+    private String transactionID = "";
 
     private Integer leaderPort = Configuration.LEADER_PORT;
 
@@ -42,7 +43,8 @@ public class ClientApplication {
             if (state.equals(States.INIT)) {
                 log.info("sending message:({}) to leader", commandMessage);
                 String response = sendToLeader(commandMessage);
-                log.info("init response: {}", response);
+                log.info("init response (transaction id): {}", response);
+                transactionID = response;
 
                 state = States.GET_TX_INPUT;
             }
@@ -57,7 +59,7 @@ public class ClientApplication {
                     log.info("{}={}", readKey, writeSet.get(readKey));
                 else {
                     log.info("sending message:({}) to leader", commandMessage);
-                    String response = sendToLeader(commandMessage);
+                    String response = sendToLeader(transactionID + "," + commandMessage);
                     log.info("{}={}", readKey, response);
                 }
 
@@ -66,7 +68,7 @@ public class ClientApplication {
             } else if (state.equals(States.COMMIT)) {
                 String commitMessage = commandMessage + " : " + serializeWriteSet() + "|" + serializeReadSet();
                 log.info("sending commit to leader: {}", commitMessage);
-                String response = sendToLeader(commitMessage);
+                String response = sendToLeader(transactionID + "," + commitMessage);
                 log.info("transaction result: {}", response);
 
                 state = States.IDLE;
@@ -134,6 +136,7 @@ public class ClientApplication {
                 if (input.equals("y")) {
                    state = States.INIT;
                    writeSet = new HashMap<>();
+                   readSet = new HashSet<>();
                    return Message.INIT_MESSAGE;
                 }
             }
