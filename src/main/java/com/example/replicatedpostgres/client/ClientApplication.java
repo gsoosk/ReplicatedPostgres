@@ -52,7 +52,7 @@ public class ClientApplication {
         if (state.equals(States.READ_ONLY_INIT)) {
             log.info("sending message:({}) to leader", commandMessage);
             String response = sendToLeader(commandMessage);
-            log.info("init response (transaction id): {}", response);
+            log.info("init response (snapshot): {}", response);
             snapshot = Serializer.deserializeMap(response);
 
             state = States.GET_RO_TX_INPUT;

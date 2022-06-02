@@ -1,12 +1,16 @@
 package com.example.replicatedpostgres.leader;
 
 
+import com.example.replicatedpostgres.shared.common.Serializer;
+import com.example.replicatedpostgres.shared.message.Message;
 import com.example.replicatedpostgres.shared.network.Receiver;
 import com.example.replicatedpostgres.shared.network.Sender;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.example.replicatedpostgres.shared.common.Configuration.LEADER_PORT;
 import static com.example.replicatedpostgres.shared.common.Configuration.REPLICATION_PORTS;
@@ -16,6 +20,13 @@ import static com.example.replicatedpostgres.shared.common.Configuration.REPLICA
 public class LeaderApplication {
 
 
+    private Integer nextTransactionId = 0;
+
+    //TODO: replace with the actual db
+    private Map<String, String> db = new HashMap<String, String>() {{
+        put("x", "12");
+        put("y", "13");
+    }};
 
     public LeaderApplication() {
     }
@@ -25,8 +36,6 @@ public class LeaderApplication {
         while (true) {
             log.info("Waiting for client message");
             String command = receiveClientCommand();
-            log.info("Executing command");
-            executeCommand(command);
             log.info("Dispatch to replications and wait for their response");
             dispatchCommandToReplications(command); // change it to replication commands
         }
@@ -43,15 +52,30 @@ public class LeaderApplication {
         }
     }
 
-    private void executeCommand(String command) {
+    private String executeCommand(String command) {
+        log.info("Executing command");
         // TODO: Process Command
+        if (command.equals(Message.INIT_MESSAGE)) {
+            return getNextTXId();
+        }
+        else if (command.equals(Message.READ_ONLY_INIT)) {
+            return Serializer.serializeMap(db);
+        }
+        return "";
+    }
+
+    private String getNextTXId() {
+        return Integer.toString(nextTransactionId++);
     }
 
     private String receiveClientCommand() {
         Receiver receiver = new Receiver();
         receiver.start(LEADER_PORT);
         String command = receiver.receive();
-        receiver.respond("ack"); //Respond to client with ack
+        log.info("received client command: {}", command);
+        String response = executeCommand(command);
+        log.info("respond to client: {}", response);
+        receiver.respond(response);
         receiver.stop();
         return command;
     }
