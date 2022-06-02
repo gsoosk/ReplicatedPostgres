@@ -57,7 +57,6 @@ public class LeaderApplication {
 
     private String executeCommand(String command) {
         log.info("Executing command");
-        // TODO: Process Command
         if (command.equals(Message.INIT_MESSAGE)) {
             Integer txId = getNextTXId();
             validator.addTrasaction(txId);
@@ -69,6 +68,7 @@ public class LeaderApplication {
         else if (Message.isReadMessage(command)) {
             String key = Message.getReadKey(command);
             log.info("reading {} from db", key);
+            // TODO: should be replaced with real db
             return db.get(key);
         }
         else if (Message.isCommitMessage(command)) {
@@ -79,6 +79,7 @@ public class LeaderApplication {
             log.info("client read set is {}", readSet);
             if (validator.validate(Integer.parseInt(txId), new ArrayList<>(readSet), new ArrayList<>(writeSet.keySet()))) {
                 for (Map.Entry<String,String> entry : writeSet.entrySet()) {
+                    // TODO: should be replaced with real db
                     db.put(entry.getKey(), entry.getValue());
                 }
                 validator.CompleteWrite(Integer.parseInt(txId));
