@@ -1,8 +1,6 @@
 package com.example.replicatedpostgres.shared.common;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class Serializer {
     public static String serializeMap(Map<String, String> map) {
@@ -41,5 +39,18 @@ public class Serializer {
             return new HashMap<>();
         }
         return result;
+    }
+
+    public static Set<String> deserializeSet(String readSet) {
+        Set<String> result = new HashSet<>();
+        try {
+            String[] keys = readSet.split(",");
+            result.addAll(Arrays.asList(keys));
+            return result;
+        }
+        catch (Exception e)
+        {
+            return new HashSet<>();
+        }
     }
 }

@@ -5,12 +5,14 @@ import com.example.replicatedpostgres.shared.common.Serializer;
 import com.example.replicatedpostgres.shared.message.Message;
 import com.example.replicatedpostgres.shared.network.Receiver;
 import com.example.replicatedpostgres.shared.network.Sender;
+import com.example.replicatedpostgres.validation.OptimisticValidation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static com.example.replicatedpostgres.shared.common.Configuration.LEADER_PORT;
 import static com.example.replicatedpostgres.shared.common.Configuration.REPLICATION_PORTS;
@@ -21,6 +23,7 @@ public class LeaderApplication {
 
 
     private Integer nextTransactionId = 0;
+    private OptimisticValidation validator = new OptimisticValidation();
 
     //TODO: replace with the actual db
     private Map<String, String> db = new HashMap<String, String>() {{
@@ -56,16 +59,40 @@ public class LeaderApplication {
         log.info("Executing command");
         // TODO: Process Command
         if (command.equals(Message.INIT_MESSAGE)) {
-            return getNextTXId();
+            Integer txId = getNextTXId();
+            validator.addTrasaction(txId);
+            return Integer.toString(txId);
         }
         else if (command.equals(Message.READ_ONLY_INIT)) {
             return Serializer.serializeMap(db);
         }
+        else if (Message.isReadMessage(command)) {
+            String key = Message.getReadKey(command);
+            log.info("reading {} from db", key);
+            return db.get(key);
+        }
+        else if (Message.isCommitMessage(command)) {
+            String txId = Message.getTXid(command);
+            Map<String, String> writeSet = Serializer.deserializeMap(Message.getWriteSet(command));
+            Set<String> readSet = Serializer.deserializeSet(Message.getReadSet(command));
+            log.info("client write set is {}", writeSet);
+            log.info("client read set is {}", readSet);
+            if (validator.validate(Integer.parseInt(txId), new ArrayList<>(readSet), new ArrayList<>(writeSet.keySet()))) {
+                for (Map.Entry<String,String> entry : writeSet.entrySet()) {
+                    db.put(entry.getKey(), entry.getValue());
+                }
+                validator.CompleteWrite(Integer.parseInt(txId));
+                log.info("tx committed");
+                return Message.COMMITTED;
+            }
+            log.info("tx aborted");
+            return Message.ABORTED;
+        }
         return "";
     }
 
-    private String getNextTXId() {
-        return Integer.toString(nextTransactionId++);
+    private Integer getNextTXId() {
+        return nextTransactionId++;
     }
 
     private String receiveClientCommand() {

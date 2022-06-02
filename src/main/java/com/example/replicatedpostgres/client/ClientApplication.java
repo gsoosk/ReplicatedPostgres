@@ -52,7 +52,6 @@ public class ClientApplication {
         if (state.equals(States.READ_ONLY_INIT)) {
             log.info("sending message:({}) to leader", commandMessage);
             String response = sendToLeader(commandMessage);
-            log.info("init response (snapshot): {}", response);
             snapshot = Serializer.deserializeMap(response);
 
             state = States.GET_RO_TX_INPUT;
@@ -98,7 +97,7 @@ public class ClientApplication {
             readSet.add(readKey);
             state = States.GET_TX_INPUT;
         } else if (state.equals(States.COMMIT)) {
-            String commitMessage = commandMessage + " : " + serializeWriteSet() + "|" + serializeReadSet();
+            String commitMessage = Message.getCommitMesage(serializeWriteSet(), serializeReadSet());
             log.info("sending commit to leader: {}", commitMessage);
             String response = sendToLeader(transactionID + "," + commitMessage);
             log.info("transaction result: {}", response);
