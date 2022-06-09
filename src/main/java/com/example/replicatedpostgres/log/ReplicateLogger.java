@@ -52,12 +52,14 @@ public class ReplicateLogger{
         }
     }
 
-    public void log(Map<String, String> writeSet) {
+    public void log(int transactionId, Map<String, String> writeSet) {
         // prepare write string
-        StringBuilder writeString = new StringBuilder();
-        for (Map.Entry<String, String> entry : writeSet.entrySet()){
-            writeString.append(entry.getKey()).append(",").append(entry.getValue()).append("\n");
+        StringBuilder pre_writeString = new StringBuilder(String.valueOf(transactionId) + ":");
+        for (Map.Entry<String, String> entry : writeSet.entrySet()) {
+            pre_writeString.append("<").append(entry.getKey()).append(",").append(entry.getValue()).append(">,");
         }
+        // remove last char
+        StringBuilder writeString = pre_writeString.delete(pre_writeString.length()-1, pre_writeString.length());
         // write with writeFile function
         writeFile(writeString.toString());
     }
