@@ -60,6 +60,7 @@ public class ReplicateLogger{
         }
         // remove last char
         StringBuilder writeString = pre_writeString.delete(pre_writeString.length()-1, pre_writeString.length());
+        writeString.append("\n");
         // write with writeFile function
         writeFile(writeString.toString());
     }
