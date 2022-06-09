@@ -9,10 +9,7 @@ import com.example.replicatedpostgres.validation.OptimisticValidation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static com.example.replicatedpostgres.shared.common.Configuration.LEADER_PORT;
 import static com.example.replicatedpostgres.shared.common.Configuration.REPLICATION_PORTS;
@@ -25,6 +22,8 @@ public class LeaderApplication {
     private Integer nextTransactionId = 0;
     private OptimisticValidation validator = new OptimisticValidation();
 
+    private Set<Integer> committedTransactions = new HashSet<>();
+
     //TODO: replace with the actual db
     private Map<String, String> db = new HashMap<String, String>() {{
         put("x", "12");
@@ -34,7 +33,8 @@ public class LeaderApplication {
     public LeaderApplication() {
     }
 
-    public void run() {
+    public void run(Set<Integer> previouslyCommittedTransactions) {
+        committedTransactions = previouslyCommittedTransactions;
         log.info("Leader application is running");
         while (true) {
             log.info("Waiting for client message");
@@ -72,6 +72,9 @@ public class LeaderApplication {
         }
         else if (Message.isCommitMessage(command)) {
             String txId = Message.getTXid(command);
+            if (committedTransactions.contains(Integer.parseInt(txId)))
+                return Message.COMMITTED;
+
             Map<String, String> writeSet = Serializer.deserializeMap(Message.getWriteSet(command));
             Set<String> readSet = Serializer.deserializeSet(Message.getReadSet(command));
             log.info("client write set is {}", writeSet);
@@ -87,6 +90,7 @@ public class LeaderApplication {
                 }
                 validator.CompleteWrite(Integer.parseInt(txId));
                 log.info("tx committed");
+                committedTransactions.add(Integer.parseInt(txId));
                 return Message.COMMITTED;
             }
             log.info("tx aborted");

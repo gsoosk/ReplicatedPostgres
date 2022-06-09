@@ -1,16 +1,15 @@
 package com.example.replicatedpostgres.replication;
 
 
+import com.example.replicatedpostgres.leader.LeaderApplication;
 import com.example.replicatedpostgres.shared.common.Serializer;
 import com.example.replicatedpostgres.shared.message.Message;
 import com.example.replicatedpostgres.shared.network.Receiver;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @Component
 @Slf4j
@@ -24,8 +23,11 @@ public class ReplicationApplication {
         put("y", "13");
     }};
 
-    public ReplicationApplication() {
+    private LeaderApplication backUpLeaderApplication;
+
+    public ReplicationApplication(LeaderApplication leaderApplication) {
         this.receiver = new Receiver();
+        backUpLeaderApplication = leaderApplication;
     }
 
 
@@ -61,8 +63,19 @@ public class ReplicationApplication {
                 // Leader failed / Switch to leader mode
                 receiver.stop();
                 log.info("Leader failed!");
-                log.info("Running leader application and recovery");
-                // TODO
+                log.info("Recovery");
+                //TODO: Recovery
+
+//                getLog();
+//                if (ourLog > theirLog) {
+//                    sendUncommitedTransactions();
+//                }
+//                else {
+//                    writeUncommitedTransactions();
+//                }
+//                Set<Integer> committedTransactions = getCommittedTransactionsFromLog();
+                log.info("Running leader application");
+//                backUpLeaderApplication.run(committedTransactions);
             }
         }
 

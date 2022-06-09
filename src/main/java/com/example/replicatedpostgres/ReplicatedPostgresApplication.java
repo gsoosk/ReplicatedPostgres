@@ -11,6 +11,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.core.env.Environment;
 
+import java.util.HashSet;
+
 import static com.example.replicatedpostgres.shared.common.Configuration.REPLICATION_PORTS;
 
 @SpringBootApplication
@@ -47,7 +49,7 @@ public class ReplicatedPostgresApplication implements CommandLineRunner {
         LOG.info("Active profile is {}", this.environment.getActiveProfiles()[0]);
         String activeProfile = this.environment.getActiveProfiles()[0];
         switch (activeProfile) {
-            case "leader" -> leaderApplication.run();
+            case "leader" -> leaderApplication.run(new HashSet<>());
             case "node1" -> replicationApplication.run(REPLICATION_PORTS.get(0));
             case "node2" -> replicationApplication.run(REPLICATION_PORTS.get(1));
             case "client" -> clientApplication.run();
