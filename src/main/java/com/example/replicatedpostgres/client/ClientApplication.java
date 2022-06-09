@@ -83,6 +83,12 @@ public class ClientApplication {
         if (state.equals(States.INIT)) {
             log.info("sending message:({}) to leader", commandMessage);
             String response = sendToLeader(commandMessage);
+            if (response == null) {
+                log.info("leader failed. Transaction aborted!");
+                log.info("try again!");
+                state = States.IDLE;
+                return;
+            }
             log.info("init response (transaction id): {}", response);
             transactionID = response;
 

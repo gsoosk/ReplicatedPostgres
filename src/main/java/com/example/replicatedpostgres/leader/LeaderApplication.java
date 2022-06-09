@@ -40,7 +40,6 @@ public class LeaderApplication {
             log.info("Waiting for client message");
             String command = receiveClientCommand();
             log.info("Dispatch to replications and wait for their response");
-            dispatchCommandToReplications(command); // change it to replication commands
         }
     }
 
@@ -78,6 +77,10 @@ public class LeaderApplication {
             log.info("client write set is {}", writeSet);
             log.info("client read set is {}", readSet);
             if (validator.validate(Integer.parseInt(txId), new ArrayList<>(readSet), new ArrayList<>(writeSet.keySet()))) {
+                //TODO: write to log
+
+                dispatchCommandToReplications("Server" + command); // forward commit message to replications
+
                 for (Map.Entry<String,String> entry : writeSet.entrySet()) {
                     // TODO: should be replaced with real db
                     db.put(entry.getKey(), entry.getValue());

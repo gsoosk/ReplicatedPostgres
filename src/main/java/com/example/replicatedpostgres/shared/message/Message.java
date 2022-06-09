@@ -99,4 +99,8 @@ public class Message {
             return "";
         }
     }
+
+    public static boolean isServerMessage(String command) {
+        return command.startsWith("Server");
+    }
 }
