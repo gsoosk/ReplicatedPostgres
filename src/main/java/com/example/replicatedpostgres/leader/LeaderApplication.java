@@ -1,12 +1,14 @@
 package com.example.replicatedpostgres.leader;
 
 
+import com.example.replicatedpostgres.log.ReplicateLogger;
 import com.example.replicatedpostgres.shared.common.Serializer;
 import com.example.replicatedpostgres.shared.message.Message;
 import com.example.replicatedpostgres.shared.network.Receiver;
 import com.example.replicatedpostgres.shared.network.Sender;
 import com.example.replicatedpostgres.validation.OptimisticValidation;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -30,10 +32,12 @@ public class LeaderApplication {
         put("y", "13");
     }};
 
+    private ReplicateLogger logger = null;
     public LeaderApplication() {
     }
 
-    public void run(Set<Integer> previouslyCommittedTransactions) {
+    public void run(Set<Integer> previouslyCommittedTransactions, ReplicateLogger initLogger) {
+        logger = initLogger;
         committedTransactions = previouslyCommittedTransactions;
         log.info("Leader application is running");
         while (true) {
@@ -80,7 +84,7 @@ public class LeaderApplication {
             log.info("client write set is {}", writeSet);
             log.info("client read set is {}", readSet);
             if (validator.validate(Integer.parseInt(txId), new ArrayList<>(readSet), new ArrayList<>(writeSet.keySet()))) {
-                //TODO: write to log
+                logger.log(Integer.parseInt(txId), writeSet);
 
                 dispatchCommandToReplications("Server" + command); // forward commit message to replications
 

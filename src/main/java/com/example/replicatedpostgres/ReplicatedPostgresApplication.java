@@ -2,6 +2,7 @@ package com.example.replicatedpostgres;
 
 import com.example.replicatedpostgres.client.ClientApplication;
 import com.example.replicatedpostgres.leader.LeaderApplication;
+import com.example.replicatedpostgres.log.ReplicateLogger;
 import com.example.replicatedpostgres.replication.ReplicationApplication;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,11 +49,17 @@ public class ReplicatedPostgresApplication implements CommandLineRunner {
 
         LOG.info("Active profile is {}", this.environment.getActiveProfiles()[0]);
         String activeProfile = this.environment.getActiveProfiles()[0];
-        switch (activeProfile) {
-            case "leader" -> leaderApplication.run(new HashSet<>());
-            case "node1" -> replicationApplication.run(REPLICATION_PORTS.get(0));
-            case "node2" -> replicationApplication.run(REPLICATION_PORTS.get(1));
-            case "client" -> clientApplication.run();
+
+        if (activeProfile.equals("client")) {
+            clientApplication.run();
+        }
+        else {
+            ReplicateLogger logger = new ReplicateLogger(activeProfile);
+            switch (activeProfile) {
+                case "leader" -> leaderApplication.run(new HashSet<>(), logger);
+                case "node1" -> replicationApplication.run(REPLICATION_PORTS.get(0), logger);
+                case "node2" -> replicationApplication.run(REPLICATION_PORTS.get(1), logger);
+            }
         }
 
     }

@@ -2,11 +2,12 @@ package com.example.replicatedpostgres.replication;
 
 
 import com.example.replicatedpostgres.leader.LeaderApplication;
+import com.example.replicatedpostgres.log.ReplicateLogger;
 import com.example.replicatedpostgres.shared.common.Serializer;
 import com.example.replicatedpostgres.shared.message.Message;
 import com.example.replicatedpostgres.shared.network.Receiver;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -25,14 +26,16 @@ public class ReplicationApplication {
 
     private LeaderApplication backUpLeaderApplication;
 
+    private ReplicateLogger logger = null;
+
     public ReplicationApplication(LeaderApplication leaderApplication) {
         this.receiver = new Receiver();
         backUpLeaderApplication = leaderApplication;
     }
 
 
-    public void run(int port) {
-
+    public void run(int port, ReplicateLogger initLogger) {
+        this.logger = initLogger;
         while(true) {
             log.info("Waiting for command");
             receiver.start(port);
@@ -47,7 +50,7 @@ public class ReplicationApplication {
                 String txId = Message.getTXid(commitCommand);
                 Map<String, String> writeSet = Serializer.deserializeMap(Message.getWriteSet(commitCommand));
                 log.info("client write set is {}", writeSet);
-                //TODO: write to log
+                this.logger.log(Integer.parseInt(txId), writeSet);
 
                 for (Map.Entry<String,String> entry : writeSet.entrySet()) {
                     // TODO: should be replaced with real db
