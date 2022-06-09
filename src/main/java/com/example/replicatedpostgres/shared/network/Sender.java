@@ -45,7 +45,7 @@ public class Sender {
             in.close();
             out.close();
             clientSocket.close();
-        } catch (IOException e) {
+        } catch (Exception e) {
             log.debug(e.getMessage());
         }
     }

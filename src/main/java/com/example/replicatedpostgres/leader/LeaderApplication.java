@@ -69,7 +69,7 @@ public class LeaderApplication {
             String key = Message.getReadKey(command);
             log.info("reading {} from db", key);
             // TODO: should be replaced with real db
-            return db.get(key);
+            return db.getOrDefault(key, "<not existed>");
         }
         else if (Message.isCommitMessage(command)) {
             String txId = Message.getTXid(command);

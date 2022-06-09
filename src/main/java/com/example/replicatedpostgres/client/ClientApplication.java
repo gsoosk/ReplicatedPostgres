@@ -43,15 +43,24 @@ public class ClientApplication {
             if (commandMessage.equals("quit"))
                 return;
 
-            handleNormalTransactionStates(commandMessage);
-            handleReadOnlyTransactionsStates(commandMessage);
+            try {
+                handleNormalTransactionStates(commandMessage);
+                handleReadOnlyTransactionsStates(commandMessage);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     }
 
-    private void handleReadOnlyTransactionsStates(String commandMessage) {
+    private void handleReadOnlyTransactionsStates(String commandMessage) throws InterruptedException {
         if (state.equals(States.READ_ONLY_INIT)) {
             log.info("sending message:({}) to leader", commandMessage);
             String response = sendToLeader(commandMessage);
+            while (response == null) { // try again with new leader
+                log.info("trying again ...");
+                Thread.sleep(1000); // retry each 1 second
+                response = sendToLeader(commandMessage);
+            }
             snapshot = Serializer.deserializeMap(response);
 
             state = States.GET_RO_TX_INPUT;
@@ -70,7 +79,7 @@ public class ClientApplication {
         }
     }
 
-    private void handleNormalTransactionStates(String commandMessage) {
+    private void handleNormalTransactionStates(String commandMessage) throws InterruptedException {
         if (state.equals(States.INIT)) {
             log.info("sending message:({}) to leader", commandMessage);
             String response = sendToLeader(commandMessage);
@@ -92,14 +101,24 @@ public class ClientApplication {
                 log.info("sending message:({}) to leader", commandMessage);
                 String response = sendToLeader(transactionID + "," + commandMessage);
                 log.info("{}={}", readKey, response);
+                if (response == null) {
+                    log.info("leader failed. Transaction aborted!");
+                    log.info("try again!");
+                    state = States.IDLE;
+                    return;
+                }
             }
-
             readSet.add(readKey);
             state = States.GET_TX_INPUT;
         } else if (state.equals(States.COMMIT)) {
             String commitMessage = Message.getCommitMesage(serializeWriteSet(), serializeReadSet());
             log.info("sending commit to leader: {}", commitMessage);
             String response = sendToLeader(transactionID + "," + commitMessage);
+            while (response == null) { // try again with new leader
+                log.info("trying again ...");
+                Thread.sleep(1000); // retry each 1 second
+                response = sendToLeader(transactionID + "," + commitMessage);
+            }
             log.info("transaction result: {}", response);
 
             state = States.IDLE;
@@ -115,10 +134,8 @@ public class ClientApplication {
         sender.startConnection("127.0.0.1", leaderPort);
         String response = sender.sendAndReceiveResponse(commandMessage);
         if (response == null) {
+            log.info("could not reach leader. leader has changed.");
             switchLeader();
-            sender.stopConnection();
-            sender.startConnection("127.0.0.1", leaderPort);
-            response = sender.sendAndReceiveResponse(commandMessage);
         }
         sender.stopConnection();
         return response;
