@@ -1,0 +1,12 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Node (2)" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
+    <module name="ReplicatedPostgres" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="com.example.replicatedpostgres.ReplicatedPostgresApplication" />
+    <option name="ACTIVE_PROFILES" value="node2" />
+    <option name="ALTERNATIVE_JRE_PATH" />
+    <option name="SHORTEN_COMMAND_LINE" value="NONE" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

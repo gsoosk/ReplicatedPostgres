@@ -1,12 +1,19 @@
 package com.example.replicatedpostgres.log;
 
 import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
+
+import com.example.replicatedpostgres.shared.common.Serializer;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 
 
+@Slf4j
 public class ReplicateLogger{
     private String loggerName = "";
 
@@ -30,12 +37,12 @@ public class ReplicateLogger{
         try {
             File myObj = new File(this.loggerName);
             if (myObj.createNewFile()) {
-                System.out.println("File created: " + myObj.getName());
+                log.info("File created: " + myObj.getName());
             } else {
-                System.out.println("File already exists.");
+                log.info("File already exists.");
             }
         } catch (IOException e) {
-            System.out.println("An error occurred.");
+            log.error("An error occurred.");
             e.printStackTrace();
         }
     }
@@ -45,22 +52,23 @@ public class ReplicateLogger{
             FileWriter myWriter = new FileWriter(this.loggerName, true);
             myWriter.write(writeString);
             myWriter.close();
-            System.out.println("Successfully wrote to the file.");
+            log.info("Successfully wrote to the file.");
         } catch (IOException e) {
-            System.out.println("An error Occurred.");
+            log.info("An error Occurred.");
             e.printStackTrace();
         }
     }
 
     public void log(int transactionId, Map<String, String> writeSet) {
-        // prepare write string
-        StringBuilder pre_writeString = new StringBuilder(String.valueOf(transactionId) + ":");
-        for (Map.Entry<String, String> entry : writeSet.entrySet()) {
-            pre_writeString.append("<").append(entry.getKey()).append(",").append(entry.getValue()).append(">,");
+        writeFile(transactionId + "=" + Serializer.serializeMap(writeSet) + "\n");
+    }
+
+    public String readAllLogs() {
+        try {
+            return Files.readString(Path.of(loggerName)) ;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return "";
         }
-        // remove last char
-        StringBuilder writeString = pre_writeString.delete(pre_writeString.length()-1, pre_writeString.length());
-        // write with writeFile function
-        writeFile(writeString.toString());
     }
 }

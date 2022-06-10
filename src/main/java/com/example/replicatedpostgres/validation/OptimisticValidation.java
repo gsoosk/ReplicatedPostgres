@@ -19,17 +19,17 @@ public class OptimisticValidation {
         timeStamp = new AtomicLong(0);
     }
 
-    public void AddTrasaction(int id) {
+    public void addTrasaction(int id) {
         TransactionRecord record = new TransactionRecord(id, timeStamp.getAndAdd(1), false);
         onGoing.put(id, record);
     }
 
-    public void AddTrasactionReadOnly(int id) {
+    public void addTrasactionReadOnly(int id) {
         TransactionRecord record = new TransactionRecord(id, timeStamp.getAndAdd(1), true);
         onGoing.put(id, record);
     }
 
-    public synchronized boolean Validate(int id, List<String> readSet, List<String> writeSet) {
+    public synchronized boolean validate(int id, List<String> readSet, List<String> writeSet) {
         if (! onGoing.containsKey(id)) {
             log.error("In Validate, " + id + " is not in ongoing set");
             return false;
