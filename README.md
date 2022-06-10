@@ -1,4 +1,6 @@
 # Replicated Postgres
+This project provide a multi-node replication system for postgres db. It will replicate data from a leader into two other replications, and it can tolerate leader failure for transactions. To maintain serializability of transactions, optimistic validation approach has been used.
+
 This project is written with JAVA using SpringBoot Framework. All dependencies are listed and managed with Maven.
 
 Intellij IDEA is recommended to run the project. MAVEN and JDK can be easily set up with it.
