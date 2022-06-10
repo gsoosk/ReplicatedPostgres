@@ -43,38 +43,46 @@ public class ClientApplication {
             if (commandMessage.equals("quit"))
                 return;
 
-            handleNormalTransactionStates(commandMessage);
-            handleReadOnlyTransactionsStates(commandMessage);
+            try {
+                handleNormalTransactionStates(commandMessage);
+                handleReadOnlyTransactionsStates(commandMessage);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     }
 
-    private void handleReadOnlyTransactionsStates(String commandMessage) {
+    private void handleReadOnlyTransactionsStates(String commandMessage) throws InterruptedException {
         if (state.equals(States.READ_ONLY_INIT)) {
             log.info("sending message:({}) to leader", commandMessage);
             String response = sendToLeader(commandMessage);
-            log.info("init response (transaction id): {}", response);
+            while (response == null) { // try again with new leader
+                log.info("trying again ...");
+                Thread.sleep(1000); // retry each 1 second
+                response = sendToLeader(commandMessage);
+            }
             snapshot = Serializer.deserializeMap(response);
 
-            state = States.GET_RO_TX_INPUT;
-        }
-        else if (state.equals(States.RO_READ)) {
-            if (snapshot.containsKey(readKey))
-                log.info("{}={}", readKey, snapshot.get(readKey));
-            else
-                log.info("{}=<not existed>", readKey);
-
-            state = States.GET_RO_TX_INPUT;
-        }
-        else if (state.equals(States.RO_COMMIT)) {
+            for (String key : readSet) {
+                if (snapshot.containsKey(key))
+                    log.info("{}={}", key, snapshot.get(readKey));
+                else
+                    log.info("{}=<not existed>", key);
+            }
             log.info("transaction result: committed");
             state = States.IDLE;
         }
     }
 
-    private void handleNormalTransactionStates(String commandMessage) {
+    private void handleNormalTransactionStates(String commandMessage) throws InterruptedException {
         if (state.equals(States.INIT)) {
             log.info("sending message:({}) to leader", commandMessage);
             String response = sendToLeader(commandMessage);
+            while (response == null) { // try again with new leader
+                log.info("trying again ...");
+                Thread.sleep(1000); // retry each 1 second
+                response = sendToLeader(commandMessage);
+            }
             log.info("init response (transaction id): {}", response);
             transactionID = response;
 
@@ -93,14 +101,24 @@ public class ClientApplication {
                 log.info("sending message:({}) to leader", commandMessage);
                 String response = sendToLeader(transactionID + "," + commandMessage);
                 log.info("{}={}", readKey, response);
+                if (response == null) {
+                    log.info("leader failed. Transaction aborted!");
+                    log.info("try again!");
+                    state = States.IDLE;
+                    return;
+                }
             }
-
             readSet.add(readKey);
             state = States.GET_TX_INPUT;
         } else if (state.equals(States.COMMIT)) {
-            String commitMessage = commandMessage + " : " + serializeWriteSet() + "|" + serializeReadSet();
+            String commitMessage = Message.getCommitMesage(serializeWriteSet(), serializeReadSet());
             log.info("sending commit to leader: {}", commitMessage);
             String response = sendToLeader(transactionID + "," + commitMessage);
+            while (response == null) { // try again with new leader
+                log.info("trying again ...");
+                Thread.sleep(1000); // retry each 1 second
+                response = sendToLeader(transactionID + "," + commitMessage);
+            }
             log.info("transaction result: {}", response);
 
             state = States.IDLE;
@@ -115,11 +133,9 @@ public class ClientApplication {
         Sender sender = new Sender();
         sender.startConnection("127.0.0.1", leaderPort);
         String response = sender.sendAndReceiveResponse(commandMessage);
-        if (response == null) {
+        if (response == null && !leaderPort.equals(Configuration.SECONDARY_LEADER_PORT)) {
+            log.info("could not reach leader. leader has changed.");
             switchLeader();
-            sender.stopConnection();
-            sender.startConnection("127.0.0.1", leaderPort);
-            response = sender.sendAndReceiveResponse(commandMessage);
         }
         sender.stopConnection();
         return response;
@@ -153,8 +169,11 @@ public class ClientApplication {
                    return Message.INIT_MESSAGE;
                 }
                 else if (input.equals("readonly")) {
-                    state = States.READ_ONLY_INIT;
+
+                    state = States.GET_RO_TX_INPUT;
                     snapshot = new HashMap<>();
+                    readSet = new HashSet<>();
+                    log.info("please input all of the variables you want to read then commit the tx to see the result");
                     return Message.READ_ONLY_INIT;
                 }
             }
@@ -186,19 +205,20 @@ public class ClientApplication {
             }
             else if (state.equals(States.GET_RO_TX_INPUT)) {
                 log.info("read input scheme:  read <key>");
-                log.info("finishing transaction: commit");
+                log.info("finishing : commit");
                 System.out.print('>');
                 String input = reader.readLine();
                 if (input.equals("quit"))
                     return "quit";
 
                 if (input.equals("commit")) {
-                    state = States.RO_COMMIT;
-                    return Message.COMMIT_MESSAGE;
+                    state = States.READ_ONLY_INIT;
+                    return Message.READ_ONLY_INIT;
                 }
                 if (isRead(input)) {
                     readKey = input.substring(5);
-                    state = States.RO_READ;
+                    readSet.add(readKey);
+                    state = States.GET_RO_TX_INPUT;
                     return Message.READ(readKey);
                 }
                 log.info("Bad input. Try again!");
