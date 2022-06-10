@@ -1,5 +1,6 @@
 package com.example.replicatedpostgres.database;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -12,6 +13,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+
+@Slf4j
 @Component
 public class DatabaseHandler {
 
@@ -21,9 +24,6 @@ public class DatabaseHandler {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    public static void main(String[] args) {
-        SpringApplication.run(DatabaseHandler.class, args);
-    }
 
     public void write(Map<String, String> writeSet) {
         // construct write sql // TODO check duplicate
@@ -38,9 +38,9 @@ public class DatabaseHandler {
         // write
         int rows = jdbcTemplate.update(sql.toString());
         if (rows > 0) {
-            System.out.println("insert success");
+            log.info("insert success");
         } else {
-            System.out.println("insert failed");
+            log.info("insert failed");
         }
     }
 

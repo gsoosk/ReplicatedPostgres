@@ -1,6 +1,7 @@
 package com.example.replicatedpostgres.replication;
 
 
+import com.example.replicatedpostgres.database.DatabaseHandler;
 import com.example.replicatedpostgres.leader.LeaderApplication;
 import com.example.replicatedpostgres.log.ReplicateLogger;
 import com.example.replicatedpostgres.shared.common.Serializer;
@@ -21,18 +22,15 @@ public class ReplicationApplication {
 
     private final Receiver receiver;
 
-    private Map<String, String> db = new HashMap<String, String>() {{
-        put("x", "12");
-        put("y", "13");
-    }};
-
     private LeaderApplication backUpLeaderApplication;
 
     private ReplicateLogger logger = null;
+    private DatabaseHandler dbHandler;
 
-    public ReplicationApplication(LeaderApplication leaderApplication) {
+    public ReplicationApplication(LeaderApplication leaderApplication, DatabaseHandler dbHandler) {
         this.receiver = new Receiver();
         backUpLeaderApplication = leaderApplication;
+        this.dbHandler = dbHandler;
     }
 
 
@@ -54,11 +52,7 @@ public class ReplicationApplication {
                 log.info("client write set is {}", writeSet);
                 this.logger.log(Integer.parseInt(txId), writeSet);
 
-                for (Map.Entry<String,String> entry : writeSet.entrySet()) {
-                    // TODO: should be replaced with real db
-                    db.put(entry.getKey(), entry.getValue());
-                }
-                log.info("new db is {}", db);
+                dbHandler.write(writeSet);
                 log.info("wrote in db");
                 log.info("Response to leader");
                 receiver.respond("done"); // TODO: make response here
@@ -126,11 +120,7 @@ public class ReplicationApplication {
             Map<String, String> writeSet = Serializer.deserializeMap(Message.getWriteSetFromLogEntry(logEntry));
             log.info("write set is {}", writeSet);
             this.logger.log(Integer.parseInt(txId), writeSet);
-            for (Map.Entry<String,String> entry : writeSet.entrySet()) {
-                // TODO: should be replaced with real db
-                db.put(entry.getKey(), entry.getValue());
-            }
-            log.info("new db is {}", db);
+            dbHandler.write(writeSet);
             log.info("wrote in db");
         }
     }

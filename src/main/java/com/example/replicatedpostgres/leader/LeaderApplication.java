@@ -1,6 +1,7 @@
 package com.example.replicatedpostgres.leader;
 
 
+import com.example.replicatedpostgres.database.DatabaseHandler;
 import com.example.replicatedpostgres.log.ReplicateLogger;
 import com.example.replicatedpostgres.shared.common.Serializer;
 import com.example.replicatedpostgres.shared.message.Message;
@@ -8,7 +9,6 @@ import com.example.replicatedpostgres.shared.network.Receiver;
 import com.example.replicatedpostgres.shared.network.Sender;
 import com.example.replicatedpostgres.validation.OptimisticValidation;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -26,15 +26,13 @@ public class LeaderApplication {
 
     private Set<Integer> committedTransactions = new HashSet<>();
 
-    //TODO: replace with the actual db
-    private Map<String, String> db = new HashMap<String, String>() {{
-        put("x", "12");
-        put("y", "13");
-    }};
 
     private ReplicateLogger logger = null;
     private Integer port = LEADER_PORT;
-    public LeaderApplication() {
+
+    private DatabaseHandler dbHandler;
+    public LeaderApplication(DatabaseHandler dbHandler) {
+        this.dbHandler = dbHandler;
     }
 
     public void run(Integer runningPort,  ReplicateLogger initLogger) {
@@ -45,7 +43,7 @@ public class LeaderApplication {
         log.info("Leader application is running");
         while (true) {
             log.info("Waiting for client message");
-            String command = receiveClientCommand();
+            receiveClientCommand();
         }
     }
 
@@ -58,7 +56,6 @@ public class LeaderApplication {
             String response = sender.sendAndReceiveResponse(command);
             log.info("Received response ({}) from node {}", response, REPLICATION_PORTS.get(i));
             sender.stopConnection();
-            // TODO: process the response
         }
     }
 
@@ -70,13 +67,13 @@ public class LeaderApplication {
             return Integer.toString(txId);
         }
         else if (command.equals(Message.READ_ONLY_INIT)) {
-            return Serializer.serializeMap(db);
+            return Serializer.serializeMap(dbHandler.readAll());
         }
         else if (Message.isReadMessage(command)) {
             String key = Message.getReadKey(command);
             log.info("reading {} from db", key);
-            // TODO: should be replaced with real db
-            return db.getOrDefault(key, "<not existed>");
+            String value = dbHandler.read(key);
+            return value == null ? "<not existed>" : value;
         }
         else if (Message.isCommitMessage(command)) {
             String txId = Message.getTXid(command);
@@ -92,10 +89,7 @@ public class LeaderApplication {
 
                 dispatchCommandToReplications("Server" + command); // forward commit message to replications
 
-                for (Map.Entry<String,String> entry : writeSet.entrySet()) {
-                    // TODO: should be replaced with real db
-                    db.put(entry.getKey(), entry.getValue());
-                }
+                dbHandler.write(writeSet);
                 validator.CompleteWrite(Integer.parseInt(txId));
                 log.info("tx committed");
                 committedTransactions.add(Integer.parseInt(txId));
@@ -111,7 +105,7 @@ public class LeaderApplication {
         return nextTransactionId++;
     }
 
-    private String receiveClientCommand() {
+    private void receiveClientCommand() {
         Receiver receiver = new Receiver();
         receiver.start(port);
         String command = receiver.receive();
@@ -120,12 +114,13 @@ public class LeaderApplication {
         log.info("respond to client: {}", response);
         receiver.respond(response);
         receiver.stop();
-        return command;
     }
 
     private Set<Integer> getCommittedTransactionsFromLog() {
         Set<Integer> result = new HashSet<>();
         String logString = logger.readAllLogs();
+        if (logString.equals(""))
+            return result;
         String[] ourLogs = logString.split("\n");
         for (String entry : ourLogs) {
             result.add(Integer.parseInt(Message.getTXidFromLogEntry(entry)));
