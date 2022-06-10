@@ -83,11 +83,10 @@ public class ClientApplication {
         if (state.equals(States.INIT)) {
             log.info("sending message:({}) to leader", commandMessage);
             String response = sendToLeader(commandMessage);
-            if (response == null) {
-                log.info("leader failed. Transaction aborted!");
-                log.info("try again!");
-                state = States.IDLE;
-                return;
+            while (response == null) { // try again with new leader
+                log.info("trying again ...");
+                Thread.sleep(1000); // retry each 1 second
+                response = sendToLeader(commandMessage);
             }
             log.info("init response (transaction id): {}", response);
             transactionID = response;
@@ -139,7 +138,7 @@ public class ClientApplication {
         Sender sender = new Sender();
         sender.startConnection("127.0.0.1", leaderPort);
         String response = sender.sendAndReceiveResponse(commandMessage);
-        if (response == null) {
+        if (response == null && !leaderPort.equals(Configuration.SECONDARY_LEADER_PORT)) {
             log.info("could not reach leader. leader has changed.");
             switchLeader();
         }

@@ -14,6 +14,7 @@ import org.springframework.core.env.Environment;
 
 import java.util.HashSet;
 
+import static com.example.replicatedpostgres.shared.common.Configuration.LEADER_PORT;
 import static com.example.replicatedpostgres.shared.common.Configuration.REPLICATION_PORTS;
 
 @SpringBootApplication
@@ -56,7 +57,7 @@ public class ReplicatedPostgresApplication implements CommandLineRunner {
         else {
             ReplicateLogger logger = new ReplicateLogger(activeProfile);
             switch (activeProfile) {
-                case "leader" -> leaderApplication.run(new HashSet<>(), logger);
+                case "leader" -> leaderApplication.run(LEADER_PORT, logger);
                 case "node1" -> replicationApplication.run(REPLICATION_PORTS.get(0), logger);
                 case "node2" -> replicationApplication.run(REPLICATION_PORTS.get(1), logger);
             }

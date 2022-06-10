@@ -33,22 +33,26 @@ public class LeaderApplication {
     }};
 
     private ReplicateLogger logger = null;
+    private Integer port = LEADER_PORT;
     public LeaderApplication() {
     }
 
-    public void run(Set<Integer> previouslyCommittedTransactions, ReplicateLogger initLogger) {
+    public void run(Integer runningPort,  ReplicateLogger initLogger) {
         logger = initLogger;
-        committedTransactions = previouslyCommittedTransactions;
+        port = runningPort;
+        committedTransactions = getCommittedTransactionsFromLog();
+        nextTransactionId = committedTransactions.size() == 0 ? 0 : Collections.max(committedTransactions) + 1;
         log.info("Leader application is running");
         while (true) {
             log.info("Waiting for client message");
             String command = receiveClientCommand();
-            log.info("Dispatch to replications and wait for their response");
         }
     }
 
     private void dispatchCommandToReplications(String command) {
         for (int i = 0; i < 2; i++) {
+            if (REPLICATION_PORTS.get(i).equals(port))
+                continue;
             Sender sender = new Sender();
             sender.startConnection("127.0.0.1", REPLICATION_PORTS.get(i));
             String response = sender.sendAndReceiveResponse(command);
@@ -109,7 +113,7 @@ public class LeaderApplication {
 
     private String receiveClientCommand() {
         Receiver receiver = new Receiver();
-        receiver.start(LEADER_PORT);
+        receiver.start(port);
         String command = receiver.receive();
         log.info("received client command: {}", command);
         String response = executeCommand(command);
@@ -117,5 +121,15 @@ public class LeaderApplication {
         receiver.respond(response);
         receiver.stop();
         return command;
+    }
+
+    private Set<Integer> getCommittedTransactionsFromLog() {
+        Set<Integer> result = new HashSet<>();
+        String logString = logger.readAllLogs();
+        String[] ourLogs = logString.split("\n");
+        for (String entry : ourLogs) {
+            result.add(Integer.parseInt(Message.getTXidFromLogEntry(entry)));
+        }
+        return result;
     }
 }

@@ -103,4 +103,24 @@ public class Message {
     public static boolean isServerMessage(String command) {
         return command.startsWith("Server");
     }
+
+    public static String getTXidFromLogEntry(String logEntry) {
+        try {
+            String[] s = logEntry.split("=");
+            return s[0];
+        }
+        catch (Exception e) {
+            return "";
+        }
+    }
+
+    public static String getWriteSetFromLogEntry(String logEntry) {
+        try {
+            String[] s = logEntry.split("=");
+            return s[1];
+        }
+        catch (Exception e) {
+            return "";
+        }
+    }
 }
