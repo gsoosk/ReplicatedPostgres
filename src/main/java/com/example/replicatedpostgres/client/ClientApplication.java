@@ -65,7 +65,7 @@ public class ClientApplication {
 
             for (String key : readSet) {
                 if (snapshot.containsKey(key))
-                    log.info("{}={}", key, snapshot.get(readKey));
+                    log.info("{}={}", key, snapshot.get(key));
                 else
                     log.info("{}=<not existed>", key);
             }
